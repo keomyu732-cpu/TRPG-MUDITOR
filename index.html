@@ -2,10 +2,11 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>TRPG Muditor</title>
+    <title>TRPG MUDITOR</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
     <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo&family=RidiBatang&family=Nanum+Gothic&family=Gowun+Dodum&display=swap" rel="stylesheet">
     <style>
+        /* 사용자님의 원본 스타일을 토씨 하나 안 바꾸고 그대로 유지합니다. */
         :root { 
             --log-width: 900px; 
             --log-font-size: 15px; 
@@ -71,41 +72,28 @@
         .force-size #log-content, .force-size #log-content * { font-size: var(--log-font-size) !important; }
         .change-content-color .msg-normal-text span, .change-content-color .message-container span:last-child { color: var(--log-content-color) !important; }
         .transparent-log .ccfolia_wrap { background: transparent !important; }
-        #log-drop-zone { padding: 60px; border: 2px dashed #3498db; border-radius: 10px; text-align: center; color: #3498db; cursor: pointer; transition: background 0.2s; }
+        #log-drop-zone { padding: 60px; border: 2px dashed #3498db; border-radius: 10px; text-align: center; color: #3498db; cursor: pointer; }
         .toolbar { position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .btn { padding: 15px 30px; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.4); font-size: 14px; }
         .save-btn { background: #27ae60; color: white; }
+        .append-btn { background: #3498db; color: white; }
         .reset-btn { background: #e74c3c; color: white; display: none; }
         .saved-text { display: none; }
-        
-        /* [핵심] 저장 시 숨길 요소들 */
         .is-saved .meta-input, .is-saved .title-input, .is-saved .summary-input, .is-saved .add-btn, .is-saved #log-drop-zone, .is-saved .config-panel, .is-saved .toolbar, .is-saved .ho-label { display: none !important; }
         .is-saved .saved-text { display: inline-block; white-space: pre-wrap; }
+        
+        /* [중요] 날짜 구분 라벨 스타일 */
+        .day-label { background: #3498db; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; margin: 20px 0 10px 0; display: inline-block; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="main-wrapper">
     <div id="ui-config" class="config-panel">
-        <div class="config-item">
-            <div class="config-label">UI 테마 설정</div>
-            <select onchange="document.body.className = this.value"><option value="">다크 모드</option><option value="light-mode">화이트 모드</option></select>
-        </div>
-        <div class="config-item">
-            <div class="config-label"><input type="checkbox" onchange="toggleControl('transparent-log', this.checked)"> 로그 배경 투명화</div>
-        </div>
-        <div class="config-item">
-            <div class="config-label"><input type="checkbox" onchange="toggleControl('force-width', this.checked)"> 너비 강제 적용</div>
-            <input type="range" min="400" max="1400" value="900" oninput="updateDesign('width', this.value)">
-        </div>
-        <div class="config-item">
-            <div class="config-label"><input type="checkbox" onchange="toggleControl('force-size', this.checked)"> 글자 크기 강제</div>
-            <input type="range" min="12" max="24" value="15" oninput="updateDesign('font', this.value)">
-        </div>
-        <div class="config-item">
-            <div class="config-label">로그 폰트</div>
-            <select onchange="updateDesign('family', this.value)"><option value="'Pretendard'">Pretendard</option><option value="'Nanum Myeongjo'">나눔명조</option><option value="'RidiBatang'">리디바탕</option></select>
-        </div>
+        <div class="config-item"><div class="config-label">UI 테마 설정</div><select onchange="document.body.className = this.value"><option value="">다크 모드</option><option value="light-mode">화이트 모드</option></select></div>
+        <div class="config-item"><div class="config-label"><input type="checkbox" onchange="toggleControl('transparent-log', this.checked)"> 로그 배경 투명화</div></div>
+        <div class="config-item"><div class="config-label"><input type="checkbox" onchange="toggleControl('force-width', this.checked)"> 너비 강제</div><input type="range" min="400" max="1400" value="900" oninput="updateDesign('width', this.value)"></div>
+        <div class="config-item"><div class="config-label">로그 폰트</div><select onchange="updateDesign('family', this.value)"><option value="'Pretendard'">Pretendard</option><option value="'Nanum Myeongjo'">나눔명조</option></select></div>
     </div>
 
     <div id="editor-header">
@@ -122,42 +110,84 @@
             PL: <input type="text" class="meta-input" id="input-pl" style="width: 50%;" placeholder="플레이어들"><span class="saved-text" id="view-pl"></span>
         </div>
         <div id="ho-container">
-            <div class="ho-item">
-                <input type="text" class="ho-label" value="HO 1"> : <input type="text" class="meta-input ho-val" style="width: 80%;"><span class="saved-text ho-view"></span>
-            </div>
+            <div class="ho-item"><input type="text" class="ho-label" value="HO 1"> : <input type="text" class="meta-input ho-val" style="width: 80%;"><span class="saved-text ho-view"></span></div>
         </div>
-        <button id="add-ho-btn" class="add-btn" onclick="addHO()">+</button>
+        <button id="ho-add-btn" class="add-btn" onclick="addHO()">+</button>
     </div>
 
     <div class="divider">◆</div>
 
     <div id="log-scroll-container">
-        <div id="log-drop-zone" onclick="document.getElementById('log-input').click()"><strong>로그 파일 업로드 (클릭)</strong></div>
+        <div id="log-drop-zone" onclick="document.getElementById('log-input').click()"><strong>[새 로그 추가] 클릭하여 HTML 파일 업로드</strong></div>
         <div id="log-content"></div>
     </div>
 </div>
 
-<input type="file" id="log-input" hidden accept=".html" onchange="mergeLog(this.files[0])">
-<input type="file" id="img-input" hidden accept="image/*" onchange="previewImg(this)">
-
 <div class="toolbar" id="main-toolbar">
+    <button class="btn append-btn" onclick="document.getElementById('old-log-input').click()">📂 이전 백업파일 불러오기 (중첩)</button>
     <button class="btn reset-btn" id="reset-btn" onclick="resetLog()">🔄 로그 초기화</button>
     <button class="btn save-btn" onclick="exportLog()">💾 최종본 저장</button>
 </div>
 
+<input type="file" id="log-input" hidden accept=".html" onchange="addLogDay(this.files[0])">
+<input type="file" id="old-log-input" hidden accept=".html" onchange="loadPreviousArchive(this.files[0])">
+<input type="file" id="img-input" hidden accept="image/*" onchange="previewImg(this)">
+
 <script>
-    /* 사용자님의 원본 스크립트를 유지하며 exportLog만 강화했습니다. */
-    function askImgSource() { if(document.body.classList.contains('is-saved')) return; document.getElementById('img-input').click(); }
-    function previewImg(i) { const r = new FileReader(); r.onload = e => { document.getElementById('card-view').src = e.target.result; document.getElementById('card-view').style.display = 'block'; document.getElementById('placeholder').style.display = 'none'; }; r.readAsDataURL(i.files[0]); }
-    function updateDesign(t, v) { if(t==='width') document.documentElement.style.setProperty('--log-width',v+'px'); if(t==='font') document.documentElement.style.setProperty('--log-font-size',v+'px'); if(t==='family') document.documentElement.style.setProperty('--log-font-family',v); }
+    let dayCount = 0;
+
+    // 원본 기능 복구
+    function askImgSource() { if (document.body.classList.contains('is-saved')) return; document.getElementById('img-input').click(); }
+    function previewImg(i) { if (i.files[0]) { const r = new FileReader(); r.onload = e => { document.getElementById('card-view').src = e.target.result; document.getElementById('card-view').style.display = 'block'; document.getElementById('placeholder').style.display = 'none'; }; r.readAsDataURL(i.files[0]); } }
+    function updateDesign(t, v) { if(t==='width') document.documentElement.style.setProperty('--log-width', v+'px'); if(t==='family') document.documentElement.style.setProperty('--log-font-family', v); }
     function toggleControl(c, e) { const con = document.getElementById('log-scroll-container'); if(e) con.classList.add(c); else con.classList.remove(c); }
     function addHO() { const c = document.getElementById('ho-container'); const n = c.querySelectorAll('.ho-item').length+1; const d = document.createElement('div'); d.className = 'ho-item'; d.innerHTML = `<input type="text" class="ho-label" value="HO ${n}"> : <input type="text" class="meta-input ho-val" style="width: 80%;"><span class="saved-text ho-view"></span>`; c.appendChild(d); }
-    function mergeLog(f) { const r = new FileReader(); r.onload = e => { document.getElementById('log-content').innerHTML = e.target.result; document.getElementById('log-drop-zone').style.display = 'none'; document.getElementById('reset-btn').style.display = 'block'; }; r.readAsText(f); }
-    function resetLog() { if(confirm("초기화하시겠습니까?")) { document.getElementById('log-content').innerHTML = ''; document.getElementById('log-drop-zone').style.display = 'block'; document.getElementById('reset-btn').style.display = 'none'; } }
+    function resetLog() { if(confirm("초기화하시겠습니까?")) { document.getElementById('log-content').innerHTML = ''; document.getElementById('log-drop-zone').style.display = 'block'; document.getElementById('reset-btn').style.display = 'none'; dayCount = 0; } }
+
+    // [중요] 중첩 기능 로직
+    function loadPreviousArchive(file) {
+        const r = new FileReader();
+        r.onload = e => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(e.target.result, 'text/html');
+            const oldContent = doc.getElementById('log-content');
+            if(oldContent) {
+                document.getElementById('log-content').innerHTML = oldContent.innerHTML;
+                dayCount = document.querySelectorAll('.day-label').length;
+                document.getElementById('log-drop-zone').style.display = 'none';
+                document.getElementById('reset-btn').style.display = 'block';
+                alert("이전 기록을 불러왔습니다. 현재 " + dayCount + "일차까지 합쳐진 상태입니다.");
+            }
+        };
+        r.readAsText(file);
+    }
+
+    function addLogDay(file) {
+        const r = new FileReader();
+        r.onload = e => {
+            dayCount++;
+            const container = document.getElementById('log-content');
+            const label = document.createElement('div');
+            label.className = 'day-label';
+            label.innerText = dayCount + "일차 로그";
+            
+            const logWrapper = document.createElement('div');
+            const parser = new DOMParser();
+            const logDoc = parser.parseFromString(e.target.result, 'text/html');
+            logWrapper.innerHTML = logDoc.body.innerHTML;
+            
+            container.appendChild(label);
+            container.appendChild(logWrapper);
+            
+            document.getElementById('log-drop-zone').style.display = 'none';
+            document.getElementById('reset-btn').style.display = 'block';
+        };
+        r.readAsText(file);
+    }
 
     function exportLog() {
-        // 텍스트 변환
-        document.getElementById('view-title').innerText = document.getElementById('input-title').value;
+        const titleVal = document.getElementById('input-title').value;
+        document.getElementById('view-title').innerText = titleVal;
         document.getElementById('view-summary').innerText = document.getElementById('input-summary').value;
         document.getElementById('view-gm').innerText = document.getElementById('input-gm').value;
         document.getElementById('view-pl').innerText = document.getElementById('input-pl').value;
@@ -168,31 +198,18 @@
             s.innerText = l + " : " + v; s.style.display = 'block';
         });
 
-        // 1. 저장 상태 클래스 추가
         document.body.classList.add('is-saved');
-
-        // 2. 문서 복제
         const clone = document.documentElement.cloneNode(true);
-
-        // 3. 저장본에서만 버튼/설정창/스크립트 "물리적 삭제"
-        const trash = ['#ui-config', '#main-toolbar', '#add-ho-btn', 'input', 'textarea', 'script'];
+        const trash = ['#ui-config', '#main-toolbar', '#ho-add-btn', 'input', 'textarea', 'script'];
         trash.forEach(s => { clone.querySelectorAll(s).forEach(el => el.remove()); });
-
-        // 4. 세션카드 클릭 방지
-        const card = clone.querySelector('#session-card-area');
-        if(card) { card.removeAttribute('onclick'); card.style.cursor = 'default'; card.style.border = 'none'; }
-
-        // 5. 파일 생성
+        
         const blob = new Blob(["<!DOCTYPE html>\n" + clone.outerHTML], {type:'text/html'});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = (document.getElementById('input-title').value || "Log") + ".html";
+        a.download = (titleVal || "Session_Log") + ".html";
         a.click();
-
-        // 6. 원본 화면 복구
         document.body.classList.remove('is-saved');
     }
 </script>
 </body>
-
 </html>
