@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>TRPG Log Archive Tool</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo&family=RidiBatang&family=Nanum+Gothic&family=Gowun+Dodum&display=swap" rel="stylesheet">
+    <style>
+        /* 사용자님의 원본 스타일을 토씨 하나 안 바꾸고 그대로 가져왔습니다. */
+        :root { 
+            --log-width: 900px; 
+            --log-font-size: 15px; 
+            --log-font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            --log-content-color: #ffffff;
+            --bg-main: #1a1a1a;
+            --bg-panel: #2c2c2c; 
+            --bg-editor: rgba(44, 44, 44, 0.8); 
+            --bg-input: rgba(255,255,255,0.05);
+            --text-main: #ffffff;
+            --text-sub: #aaaaaa;
+            --border-color: #444444;
+        }
+        body.light-mode {
+            --bg-main: #f0f2f5; --bg-panel: #ffffff; --bg-editor: #ffffff; --bg-input: rgba(0,0,0,0.05);
+            --text-main: #1a1a1a; --text-sub: #555555; --border-color: #cccccc;
+        }
+        body { background-color: var(--bg-main); color: var(--text-main); margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; transition: background 0.3s; }
+        #main-wrapper { width: 100%; display: flex; flex-direction: column; align-items: center; padding: 40px 0; }
+        .config-panel {
+            width: 900px; background: var(--bg-panel); padding: 25px; border-radius: 12px; margin-bottom: 30px;
+            display: flex; flex-wrap: wrap; gap: 20px; border: 1px solid var(--border-color); box-sizing: border-box;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .config-item { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 170px; }
+        .config-label { font-size: 12px; font-weight: bold; color: var(--text-sub); display: flex; align-items: center; gap: 5px; }
+        select { 
+            background-color: #444444 !important; color: #ffffff !important;
+            border: 1px solid var(--border-color); border-radius: 4px; padding: 6px; cursor: pointer; outline: none; font-family: 'Pretendard';
+            appearance: none; -webkit-appearance: none;
+        }
+        #editor-header {
+            width: 900px; background: var(--bg-editor); border-radius: 15px; padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); margin-bottom: 20px; box-sizing: border-box;
+            font-family: var(--log-font-family) !important;
+        }
+        .session-card {
+            width: 100%; height: 450px; background: #333; border: 2px dashed #555;
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            overflow: hidden; cursor: pointer; margin-bottom: 25px; color: #888;
+        }
+        .session-card img { width: 100%; height: 100%; object-fit: cover; }
+        .title-input { 
+            width: 100%; background: transparent; border: none; border-bottom: 2px solid var(--border-color);
+            color: var(--text-main); font-size: 32px; font-weight: bold; padding: 10px 0; outline: none; margin-bottom: 10px;
+        }
+        .summary-input {
+            width: 100%; background: transparent; border: none; color: var(--text-sub);
+            font-size: 16px; line-height: 1.6; padding: 10px 0; outline: none;
+            resize: vertical; min-height: 60px; margin-bottom: 20px;
+        }
+        .meta-input {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-main);
+            padding: 10px 15px; border-radius: 6px; margin-right: 10px; outline: none;
+        }
+        .ho-item { margin: 12px 0; display: flex; align-items: center; gap: 10px; }
+        .ho-label { background: transparent; border: none; color: var(--text-sub); font-size: 14px; width: 50px; outline: none; font-weight: bold; }
+        .add-btn { cursor: pointer; background: #444; color: #fff; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 20px; display: flex; align-items: center; justify-content: center; }
+        .divider { color: var(--text-main); font-size: 20px; margin: 40px 0; opacity: 0.5; }
+        #log-scroll-container { margin: 0 auto !important; position: relative; }
+        #log-content, #log-content * { font-family: var(--log-font-family) !important; }
+        .force-width { width: var(--log-width) !important; }
+        .force-size #log-content, .force-size #log-content * { font-size: var(--log-font-size) !important; }
+        .change-content-color .msg-normal-text span, .change-content-color .message-container span:last-child { color: var(--log-content-color) !important; }
+        .transparent-log .ccfolia_wrap { background: transparent !important; }
+        #log-drop-zone { padding: 60px; border: 2px dashed #3498db; border-radius: 10px; text-align: center; color: #3498db; cursor: pointer; transition: background 0.2s; }
+        .toolbar { position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .btn { padding: 15px 30px; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.4); font-size: 14px; }
+        .save-btn { background: #27ae60; color: white; }
+        .reset-btn { background: #e74c3c; color: white; display: none; }
+        .saved-text { display: none; }
+        
+        /* [핵심] 저장 시 숨길 요소들 */
+        .is-saved .meta-input, .is-saved .title-input, .is-saved .summary-input, .is-saved .add-btn, .is-saved #log-drop-zone, .is-saved .config-panel, .is-saved .toolbar, .is-saved .ho-label { display: none !important; }
+        .is-saved .saved-text { display: inline-block; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+<div id="main-wrapper">
+    <div id="ui-config" class="config-panel">
+        <div class="config-item">
+            <div class="config-label">UI 테마 설정</div>
+            <select onchange="document.body.className = this.value"><option value="">다크 모드</option><option value="light-mode">화이트 모드</option></select>
+        </div>
+        <div class="config-item">
+            <div class="config-label"><input type="checkbox" onchange="toggleControl('transparent-log', this.checked)"> 로그 배경 투명화</div>
+        </div>
+        <div class="config-item">
+            <div class="config-label"><input type="checkbox" onchange="toggleControl('force-width', this.checked)"> 너비 강제 적용</div>
+            <input type="range" min="400" max="1400" value="900" oninput="updateDesign('width', this.value)">
+        </div>
+        <div class="config-item">
+            <div class="config-label"><input type="checkbox" onchange="toggleControl('force-size', this.checked)"> 글자 크기 강제</div>
+            <input type="range" min="12" max="24" value="15" oninput="updateDesign('font', this.value)">
+        </div>
+        <div class="config-item">
+            <div class="config-label">로그 폰트</div>
+            <select onchange="updateDesign('family', this.value)"><option value="'Pretendard'">Pretendard</option><option value="'Nanum Myeongjo'">나눔명조</option><option value="'RidiBatang'">리디바탕</option></select>
+        </div>
+    </div>
+
+    <div id="editor-header">
+        <div class="session-card" id="session-card-area" onclick="askImgSource()">
+            <span id="placeholder">📷 세션 카드를 첨부하세요.</span>
+            <img id="card-view" style="display:none;">
+        </div>
+        <input type="text" class="title-input" id="input-title" placeholder="세션 타이틀 입력">
+        <h1 class="saved-text" id="view-title" style="margin:0; padding: 10px 0;"></h1>
+        <textarea class="summary-input" id="input-summary" placeholder="세션 개요를 입력하세요"></textarea>
+        <div class="saved-text" id="view-summary" style="width:100%; color:#bbb; margin-bottom:20px;"></div>
+        <div class="info-group">
+            GM: <input type="text" class="meta-input" id="input-gm" placeholder="이름"><span class="saved-text" id="view-gm" style="margin-right:20px;"></span>
+            PL: <input type="text" class="meta-input" id="input-pl" style="width: 50%;" placeholder="플레이어들"><span class="saved-text" id="view-pl"></span>
+        </div>
+        <div id="ho-container">
+            <div class="ho-item">
+                <input type="text" class="ho-label" value="HO 1"> : <input type="text" class="meta-input ho-val" style="width: 80%;"><span class="saved-text ho-view"></span>
+            </div>
+        </div>
+        <button id="add-ho-btn" class="add-btn" onclick="addHO()">+</button>
+    </div>
+
+    <div class="divider">◆</div>
+
+    <div id="log-scroll-container">
+        <div id="log-drop-zone" onclick="document.getElementById('log-input').click()"><strong>로그 파일 업로드 (클릭)</strong></div>
+        <div id="log-content"></div>
+    </div>
+</div>
+
+<input type="file" id="log-input" hidden accept=".html" onchange="mergeLog(this.files[0])">
+<input type="file" id="img-input" hidden accept="image/*" onchange="previewImg(this)">
+
+<div class="toolbar" id="main-toolbar">
+    <button class="btn reset-btn" id="reset-btn" onclick="resetLog()">🔄 로그 초기화</button>
+    <button class="btn save-btn" onclick="exportLog()">💾 최종본 저장</button>
+</div>
+
+<script>
+    /* 사용자님의 원본 스크립트를 유지하며 exportLog만 강화했습니다. */
+    function askImgSource() { if(document.body.classList.contains('is-saved')) return; document.getElementById('img-input').click(); }
+    function previewImg(i) { const r = new FileReader(); r.onload = e => { document.getElementById('card-view').src = e.target.result; document.getElementById('card-view').style.display = 'block'; document.getElementById('placeholder').style.display = 'none'; }; r.readAsDataURL(i.files[0]); }
+    function updateDesign(t, v) { if(t==='width') document.documentElement.style.setProperty('--log-width',v+'px'); if(t==='font') document.documentElement.style.setProperty('--log-font-size',v+'px'); if(t==='family') document.documentElement.style.setProperty('--log-font-family',v); }
+    function toggleControl(c, e) { const con = document.getElementById('log-scroll-container'); if(e) con.classList.add(c); else con.classList.remove(c); }
+    function addHO() { const c = document.getElementById('ho-container'); const n = c.querySelectorAll('.ho-item').length+1; const d = document.createElement('div'); d.className = 'ho-item'; d.innerHTML = `<input type="text" class="ho-label" value="HO ${n}"> : <input type="text" class="meta-input ho-val" style="width: 80%;"><span class="saved-text ho-view"></span>`; c.appendChild(d); }
+    function mergeLog(f) { const r = new FileReader(); r.onload = e => { document.getElementById('log-content').innerHTML = e.target.result; document.getElementById('log-drop-zone').style.display = 'none'; document.getElementById('reset-btn').style.display = 'block'; }; r.readAsText(f); }
+    function resetLog() { if(confirm("초기화하시겠습니까?")) { document.getElementById('log-content').innerHTML = ''; document.getElementById('log-drop-zone').style.display = 'block'; document.getElementById('reset-btn').style.display = 'none'; } }
+
+    function exportLog() {
+        // 텍스트 변환
+        document.getElementById('view-title').innerText = document.getElementById('input-title').value;
+        document.getElementById('view-summary').innerText = document.getElementById('input-summary').value;
+        document.getElementById('view-gm').innerText = document.getElementById('input-gm').value;
+        document.getElementById('view-pl').innerText = document.getElementById('input-pl').value;
+        document.querySelectorAll('.ho-item').forEach(item => {
+            const l = item.querySelector('.ho-label').value;
+            const v = item.querySelector('.ho-val').value;
+            const s = item.querySelector('.ho-view');
+            s.innerText = l + " : " + v; s.style.display = 'block';
+        });
+
+        // 1. 저장 상태 클래스 추가
+        document.body.classList.add('is-saved');
+
+        // 2. 문서 복제
+        const clone = document.documentElement.cloneNode(true);
+
+        // 3. 저장본에서만 버튼/설정창/스크립트 "물리적 삭제"
+        const trash = ['#ui-config', '#main-toolbar', '#add-ho-btn', 'input', 'textarea', 'script'];
+        trash.forEach(s => { clone.querySelectorAll(s).forEach(el => el.remove()); });
+
+        // 4. 세션카드 클릭 방지
+        const card = clone.querySelector('#session-card-area');
+        if(card) { card.removeAttribute('onclick'); card.style.cursor = 'default'; card.style.border = 'none'; }
+
+        // 5. 파일 생성
+        const blob = new Blob(["<!DOCTYPE html>\n" + clone.outerHTML], {type:'text/html'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = (document.getElementById('input-title').value || "Log") + ".html";
+        a.click();
+
+        // 6. 원본 화면 복구
+        document.body.classList.remove('is-saved');
+    }
+</script>
+</body>
+</html>
